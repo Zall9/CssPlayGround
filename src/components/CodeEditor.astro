@@ -1,0 +1,119 @@
+---
+interface Props {
+  title: string;
+  body: string;
+  href: string;
+}
+
+---
+<script>
+  import {gutter, GutterMarker, keymap, lineNumbers, ViewUpdate} from "@codemirror/view"
+  import {EditorView} from "codemirror"
+  import { html, htmlCompletionSource, autoCloseTags} from '@codemirror/lang-html';
+  import { css, cssCompletionSource } from '@codemirror/lang-css';
+  import {Compartment, EditorState} from '@codemirror/state';
+  import { autocompletion, insertBracket } from '@codemirror/autocomplete';
+  import {birdsOfParadise} from 'thememirror';
+
+  let language = new Compartment, tabSize = new Compartment
+
+  const htmlEditorElement = document.getElementById('htmlEditor');
+  const cssEditorElement = document.getElementById('cssEditor');
+
+  const htmlEditor = new EditorView({
+    state: EditorState.create({
+      doc: '',
+      extensions: [
+        html(),
+        autocompletion({override: [htmlCompletionSource]}),
+        lineNumbers(),
+        autoCloseTags,
+        birdsOfParadise,
+        EditorView.updateListener.of((v:ViewUpdate) => {
+          if (v.docChanged) {
+            updatePreview()
+          }
+        }),
+      ]
+    }),
+    parent: htmlEditorElement
+  });
+
+  const cssEditor = new EditorView({
+    state: EditorState.create({
+      doc: '',
+      extensions: [
+        language.of(css()),
+        lineNumbers(),
+        autocompletion({override: [cssCompletionSource]}),
+        EditorView.updateListener.of((v:ViewUpdate) => {
+          if (v.docChanged) {
+            updatePreview()
+          }
+        }),
+        birdsOfParadise
+      ],
+
+    }),
+    parent: cssEditorElement
+  });
+
+  const preview = document.getElementById('preview');
+
+  function updatePreview() {
+    const htmlContent = htmlEditor.state.doc.toString();
+    const cssContent = `<style>${cssEditor.state.doc.toString()}</style>`;
+    preview.innerHTML = cssContent + htmlContent;
+  }
+
+  // htmlEditor.dispatch = (transaction) => {
+  //   htmlEditor.update(transaction);
+  //   updatePreview();
+  // };
+  //
+  // cssEditor.dispatch = (transaction) => {
+  //   cssEditor.update(transaction);
+  //   updatePreview();
+  // };
+
+</script>
+
+<section class="code-editor-wrapper">
+
+    <div class="editor">
+        <div>html</div>
+        <div id="htmlEditor" class="code-editor"></div>
+        <div>css</div>
+        <div id="cssEditor" class="code-editor"></div>
+    </div>
+    <div class="output">
+        <div id="preview"></div>
+    </div>
+</section>
+<style>
+
+    .code-editor-wrapper{
+        display: flex;
+    }
+
+    .editor {
+        width: 50%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .output {
+        width: 50%;
+        height: 100%;
+        border-left: 2px solid #ddd;
+        padding: 10px;
+        box-sizing: border-box;
+        overflow: auto;
+    }
+    .CodeMirror {
+        flex-grow: 1;
+        border: 1px solid #ddd;
+        height: 50%;
+        margin-bottom: 10px;
+    }
+</style>
